@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-acme/lego/challenge/dns01"
 	"github.com/go-acme/lego/platform/config/env"
+	"github.com/miekg/dns"
 	"github.com/ovh/go-ovh/ovh"
 )
 
@@ -115,20 +116,15 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 	fqdn, value := dns01.GetRecord(domain, keyAuth)
 
 	// Parse domain name
-	authZone, err := dns01.FindZoneByFqdn(dns01.ToFqdn(domain))
-	if err != nil {
-		return fmt.Errorf("ovh: could not determine zone for domain: '%s'. %s", domain, err)
-	}
-
-	authZone = dns01.UnFqdn(authZone)
-	subDomain := d.extractRecordName(fqdn, authZone)
+	authZone := extractAuthZone(domain)
+	subDomain := extractRecordName(fqdn, authZone)
 
 	reqURL := fmt.Sprintf("/domain/zone/%s/record", authZone)
 	reqData := Record{FieldType: "TXT", SubDomain: subDomain, Target: value, TTL: d.config.TTL}
 
 	// Create TXT record
 	var respData Record
-	err = d.client.Post(reqURL, reqData, &respData)
+	err := d.client.Post(reqURL, reqData, &respData)
 	if err != nil {
 		return fmt.Errorf("ovh: error when call api to add record (%s): %v", reqURL, err)
 	}
@@ -159,16 +155,11 @@ func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 		return fmt.Errorf("ovh: unknown record ID for '%s'", fqdn)
 	}
 
-	authZone, err := dns01.FindZoneByFqdn(dns01.ToFqdn(domain))
-	if err != nil {
-		return fmt.Errorf("ovh: could not determine zone for domain: '%s'. %s", domain, err)
-	}
-
-	authZone = dns01.UnFqdn(authZone)
+	authZone := extractAuthZone(domain)
 
 	reqURL := fmt.Sprintf("/domain/zone/%s/record/%d", authZone, recordID)
 
-	err = d.client.Delete(reqURL, nil)
+	err := d.client.Delete(reqURL, nil)
 	if err != nil {
 		return fmt.Errorf("ovh: error when call OVH api to delete challenge record (%s): %v", reqURL, err)
 	}
@@ -194,10 +185,19 @@ func (d *DNSProvider) Timeout() (timeout, interval time.Duration) {
 	return d.config.PropagationTimeout, d.config.PollingInterval
 }
 
-func (d *DNSProvider) extractRecordName(fqdn, domain string) string {
+func extractRecordName(fqdn, domain string) string {
 	name := dns01.UnFqdn(fqdn)
-	if idx := strings.Index(name, "."+domain); idx != -1 {
+	if idx := strings.Index(name, "."+dns01.UnFqdn(domain)); idx != -1 {
 		return name[:idx]
 	}
 	return name
+}
+
+func extractAuthZone(domain string) string {
+	fragments := dns.SplitDomainName(domain)
+	if len(fragments) > 2 {
+		return strings.Join(fragments[len(fragments)-2:], ".")
+	}
+
+	return domain
 }
