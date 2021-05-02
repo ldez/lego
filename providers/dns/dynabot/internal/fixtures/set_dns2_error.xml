@@ -1,0 +1,7 @@
+<SetDnsResponse>
+    <SetDnsHeader>
+        <SuccessCode>-1</SuccessCode>
+        <Status>error</Status>
+        <Error>no record for subdomain0</Error>
+    </SetDnsHeader>
+</SetDnsResponse>

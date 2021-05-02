@@ -1,0 +1,6 @@
+<SetDnsResponse>
+    <SetDnsHeader>
+        <SuccessCode>0</SuccessCode>
+        <Status>success</Status>
+    </SetDnsHeader>
+</SetDnsResponse>
