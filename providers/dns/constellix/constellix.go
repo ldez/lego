@@ -10,6 +10,7 @@ import (
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/platform/config/env"
 	"github.com/go-acme/lego/v4/providers/dns/constellix/internal"
+	"github.com/go-acme/lego/v4/providers/dns/internal/generic"
 )
 
 // Environment variables names.
@@ -109,7 +110,7 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 		return fmt.Errorf("constellix: failed to get domain (%s): %w", authZone, err)
 	}
 
-	recordName, err := getRecordName(fqdn, authZone)
+	recordName, err := generic.GetRecordName(fqdn, authZone)
 	if err != nil {
 		return fmt.Errorf("constellix: %w", err)
 	}
@@ -150,7 +151,7 @@ func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 		return fmt.Errorf("constellix: failed to get domain (%s): %w", authZone, err)
 	}
 
-	recordName, err := getRecordName(fqdn, authZone)
+	recordName, err := generic.GetRecordName(fqdn, authZone)
 	if err != nil {
 		return fmt.Errorf("constellix: %w", err)
 	}
@@ -267,14 +268,4 @@ func containsValue(record *internal.Record, value string) bool {
 	}
 
 	return false
-}
-
-func getRecordName(fqdn, authZone string) (string, error) {
-	end := len(fqdn) - len(authZone) - 1
-
-	if len(fqdn) < end || end < 0 {
-		return "", fmt.Errorf("%d is lower than the length of the fqdn (fqdn: %s, authZone: %s)", end, fqdn, authZone)
-	}
-
-	return fqdn[0:end], nil
 }
