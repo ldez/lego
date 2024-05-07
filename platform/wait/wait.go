@@ -25,6 +25,7 @@ func For(msg string, timeout, interval time.Duration, f func() (bool, error)) er
 
 		stop, err := f()
 		if stop {
+			log.Infof("End of wait for %s [timeout: %s, interval: %s]", msg, timeout, interval)
 			return nil
 		}
 		if err != nil {
