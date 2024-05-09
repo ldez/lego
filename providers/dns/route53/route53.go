@@ -243,9 +243,7 @@ func (d *DNSProvider) changeRecord(ctx context.Context, action awstypes.ChangeAc
 
 	if d.config.WaitForRecordSetsChanged {
 		return wait.For("route53", d.config.PropagationTimeout, d.config.PollingInterval, func() (bool, error) {
-			reqParams := &route53.GetChangeInput{Id: changeID}
-
-			resp, err := d.client.GetChange(ctx, reqParams)
+			resp, err := d.client.GetChange(ctx, &route53.GetChangeInput{Id: changeID})
 			if err != nil {
 				return false, fmt.Errorf("failed to query change status: %w", err)
 			}
@@ -253,6 +251,7 @@ func (d *DNSProvider) changeRecord(ctx context.Context, action awstypes.ChangeAc
 			if resp.ChangeInfo.Status == awstypes.ChangeStatusInsync {
 				return true, nil
 			}
+
 			return false, fmt.Errorf("unable to retrieve change: ID=%s", deref(changeID))
 		})
 	}
