@@ -147,13 +147,19 @@ func NewDNSProviderConfig(config *Config) (*DNSProvider, error) {
 		return nil, fmt.Errorf("aliesa: new client: %w", err)
 	}
 
-	return &DNSProvider{config: config, client: client}, nil
+	return &DNSProvider{
+		config:    config,
+		client:    client,
+		recordIDs: map[string]int64{},
+	}, nil
 }
 
 // Present creates a TXT record using the specified parameters.
 func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 	ctx := context.Background()
+
 	info := dns01.GetChallengeInfo(domain, keyAuth)
+
 	siteID, err := d.getSiteID(ctx, info.EffectiveFQDN)
 	if err != nil {
 		return fmt.Errorf("aliesa: %w", err)
@@ -165,6 +171,7 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 		SetRecordName(dns01.UnFqdn(info.EffectiveFQDN)).
 		SetTtl(int32(d.config.TTL)).
 		SetData(new(esa.CreateRecordRequestData).SetValue(info.Value))
+
 	// https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
 	crResp, err := esa.CreateRecordWithContext(ctx, d.client, crReq, &dara.RuntimeOptions{})
 	if err != nil {
