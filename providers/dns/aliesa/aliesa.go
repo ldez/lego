@@ -26,6 +26,7 @@ const (
 	EnvSecretKey     = envNamespace + "SECRET_KEY"
 	EnvSecurityToken = envNamespace + "SECURITY_TOKEN"
 	EnvRegionID      = envNamespace + "REGION_ID"
+	EnvEndpoint      = envNamespace + "ENDPOINT"
 
 	EnvTTL                = envNamespace + "TTL"
 	EnvPropagationTimeout = envNamespace + "PROPAGATION_TIMEOUT"
@@ -34,6 +35,7 @@ const (
 )
 
 const defaultRegionID = "cn-hangzhou"
+const defaultEndpoint = "esa.cn-hangzhou.aliyuncs.com"
 
 // Config is used to configure the creation of the DNSProvider.
 type Config struct {
@@ -42,6 +44,7 @@ type Config struct {
 	SecretKey     string
 	SecurityToken string
 	RegionID      string
+	Endpoint      string
 
 	PropagationTimeout time.Duration
 	PollingInterval    time.Duration
@@ -72,6 +75,7 @@ type DNSProvider struct {
 func NewDNSProvider() (*DNSProvider, error) {
 	config := NewDefaultConfig()
 	config.RegionID = env.GetOrFile(EnvRegionID)
+	config.Endpoint = env.GetOrFile(EnvEndpoint)
 
 	values, err := env.Get(EnvRAMRole)
 	if err == nil {
@@ -100,9 +104,13 @@ func NewDNSProviderConfig(config *Config) (*DNSProvider, error) {
 	if config.RegionID == "" {
 		config.RegionID = defaultRegionID
 	}
+	if config.Endpoint == "" {
+		config.Endpoint = defaultEndpoint
+	}
 
 	cfg := new(openapi.Config).
 		SetRegionId(config.RegionID).
+		SetEndpoint(config.Endpoint).
 		SetReadTimeout(int(config.HTTPTimeout.Milliseconds()))
 
 	switch {
@@ -145,9 +153,7 @@ func NewDNSProviderConfig(config *Config) (*DNSProvider, error) {
 // Present creates a TXT record using the specified parameters.
 func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 	ctx := context.Background()
-
 	info := dns01.GetChallengeInfo(domain, keyAuth)
-
 	siteID, err := d.getSiteID(ctx, info.EffectiveFQDN)
 	if err != nil {
 		return fmt.Errorf("aliesa: %w", err)
@@ -159,7 +165,6 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 		SetRecordName(dns01.UnFqdn(info.EffectiveFQDN)).
 		SetTtl(int32(d.config.TTL)).
 		SetData(new(esa.CreateRecordRequestData).SetValue(info.Value))
-
 	// https://www.alibabacloud.com/help/en/edge-security-acceleration/esa/api-esa-2024-09-10-createrecord
 	crResp, err := esa.CreateRecordWithContext(ctx, d.client, crReq, &dara.RuntimeOptions{})
 	if err != nil {
