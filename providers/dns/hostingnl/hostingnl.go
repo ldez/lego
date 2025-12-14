@@ -56,7 +56,7 @@ type DNSProvider struct {
 	config *Config
 	client *internal.Client
 
-	recordIDs   map[string]string
+	recordIDs   map[string][]string
 	recordIDsMu sync.Mutex
 }
 
@@ -94,7 +94,7 @@ func NewDNSProviderConfig(config *Config) (*DNSProvider, error) {
 	return &DNSProvider{
 		config:    config,
 		client:    client,
-		recordIDs: make(map[string]string),
+		recordIDs: make(map[string][]string),
 	}, nil
 }
 
@@ -111,8 +111,8 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 		Name:     dns01.UnFqdn(info.EffectiveFQDN),
 		Type:     "TXT",
 		Content:  strconv.Quote(info.Value),
-		TTL:      strconv.Itoa(d.config.TTL),
-		Priority: "0",
+		TTL:      d.config.TTL,
+		Priority: 0,
 	}
 
 	newRecord, err := d.client.AddRecord(context.Background(), dns01.UnFqdn(authZone), record)
@@ -121,7 +121,7 @@ func (d *DNSProvider) Present(domain, token, keyAuth string) error {
 	}
 
 	d.recordIDsMu.Lock()
-	d.recordIDs[token] = newRecord.ID
+	d.recordIDs[token] = append(d.recordIDs[token], newRecord.ID)
 	d.recordIDsMu.Unlock()
 
 	return nil
@@ -136,17 +136,20 @@ func (d *DNSProvider) CleanUp(domain, token, keyAuth string) error {
 		return fmt.Errorf("hostingnl: could not find zone for domain %q: %w", domain, err)
 	}
 
-	// gets the record's unique ID
+	// gets the record's unique IDs
 	d.recordIDsMu.Lock()
-	recordID, ok := d.recordIDs[token]
+	recordIDs, ok := d.recordIDs[token]
 	d.recordIDsMu.Unlock()
 	if !ok {
 		return fmt.Errorf("hostingnl: unknown record ID for '%s' '%s'", info.EffectiveFQDN, token)
 	}
 
-	err = d.client.DeleteRecord(context.Background(), dns01.UnFqdn(authZone), recordID)
-	if err != nil {
-		return fmt.Errorf("hostingnl: failed to delete TXT record, id=%s: %w", recordID, err)
+	// delete all records for this token
+	for _, recordID := range recordIDs {
+		err = d.client.DeleteRecord(context.Background(), dns01.UnFqdn(authZone), recordID)
+		if err != nil {
+			return fmt.Errorf("hostingnl: failed to delete TXT record, id=%s: %w", recordID, err)
+		}
 	}
 
 	// deletes record ID from map

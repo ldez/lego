@@ -35,10 +35,6 @@ func NewClient(apiKey string) *Client {
 func (c Client) AddRecord(ctx context.Context, domain string, record Record) (*Record, error) {
 	endpoint := c.baseURL.JoinPath("domains", domain, "dns")
 
-	query := endpoint.Query()
-	query.Set("client_id", "0")
-	endpoint.RawQuery = query.Encode()
-
 	req, err := newJSONRequest(ctx, http.MethodPost, endpoint, []Record{record})
 	if err != nil {
 		return nil, err
@@ -57,12 +53,25 @@ func (c Client) AddRecord(ctx context.Context, domain string, record Record) (*R
 	return &result.Data[0], nil
 }
 
-func (c Client) DeleteRecord(ctx context.Context, domain, recordID string) error {
+func (c Client) GetRecords(ctx context.Context, domain string) ([]Record, error) {
 	endpoint := c.baseURL.JoinPath("domains", domain, "dns")
 
-	query := endpoint.Query()
-	query.Set("client_id", "0")
-	endpoint.RawQuery = query.Encode()
+	req, err := newJSONRequest(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result APIResponse[Record]
+	err = c.do(req, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Data, nil
+}
+
+func (c Client) DeleteRecord(ctx context.Context, domain, recordID string) error {
+	endpoint := c.baseURL.JoinPath("domains", domain, "dns")
 
 	req, err := newJSONRequest(ctx, http.MethodDelete, endpoint, []Record{{ID: recordID}})
 	if err != nil {
