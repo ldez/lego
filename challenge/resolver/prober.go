@@ -55,6 +55,8 @@ func (p *Prober) Solve(authorizations []acme.Authorization) error {
 		authSolversSequential []*selectedAuthSolver
 	)
 
+	uniq := make(map[string]struct{})
+
 	// Loop through the resources, basically through the domains.
 	// First pass just selects a solver for each authz.
 
@@ -64,6 +66,16 @@ func (p *Prober) Solve(authorizations []acme.Authorization) error {
 			// Boulder might recycle recent validated authz (see issue #267)
 			log.Infof("[%s] acme: authorization already valid; skipping challenge", domain)
 			continue
+		}
+
+		chlg, err := challenge.FindChallenge(challenge.DNS01, authz)
+		if err == nil {
+			if _, ok := uniq[authz.Identifier.Value+chlg.Token]; ok {
+				log.Infof("[%s] acme: skipping duplicate DNS challenges.", domain)
+				continue
+			}
+
+			uniq[authz.Identifier.Value+chlg.Token] = struct{}{}
 		}
 
 		if solvr := p.solverManager.chooseSolver(authz); solvr != nil {
