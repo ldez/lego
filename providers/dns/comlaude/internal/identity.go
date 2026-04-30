@@ -56,7 +56,7 @@ func (c *Identifier) APILogin(ctx context.Context, username, password, apiKey st
 		return nil, err
 	}
 
-	return &info.Data[0], nil
+	return info.Data, nil
 }
 
 func (c *Identifier) do(req *http.Request, result any) error {

@@ -67,7 +67,7 @@ type APILoginRequest struct {
 	APIKey   string `url:"api_key"`
 }
 
-type LoginResponse BaseResponse[string, Message, []TokenInfo]
+type LoginResponse BaseResponse[string, Message, *TokenInfo]
 
 type Message struct {
 	Code    string `json:"code"`

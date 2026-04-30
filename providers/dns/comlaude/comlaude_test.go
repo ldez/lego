@@ -1,13 +1,13 @@
 package comlaude
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/go-acme/lego/v4/platform/tester"
 	"github.com/go-acme/lego/v4/platform/tester/servermock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -260,8 +260,11 @@ func TestDNSProvider_Present(t *testing.T) {
 	err := provider.Present("example.com", "abc", "123d==")
 	require.NoError(t, err)
 
-	fmt.Println(provider.zoneIDs)
-	fmt.Println(provider.recordIDs)
+	require.Len(t, provider.zoneIDs, 1)
+	require.Len(t, provider.recordIDs, 1)
+
+	assert.Equal(t, "62b873d3-a31c-4921-a309-548810913c4f", provider.zoneIDs["abc"])
+	assert.Equal(t, "8a746001-d319-4583-bfb6-ae8aacc628aa", provider.recordIDs["abc"])
 }
 
 func TestDNSProvider_CleanUp(t *testing.T) {
