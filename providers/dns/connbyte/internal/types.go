@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 )
@@ -16,10 +18,21 @@ func (a APIError) Error() string {
 
 	_, _ = fmt.Fprintf(msg, "%d: %s %s (%s %d %s)", a.Status.Code, a.Status.Title, a.Status.Message, a.Status.ID, a.Status.Time, a.Status.Path)
 
+	fields := make(map[string]string)
+
 	for _, m := range a.Field {
 		for k, v := range m {
-			_, _ = fmt.Fprintf(msg, " [%s: %s]", k, v)
+			text, ok := fields[k]
+			if ok {
+				fields[k] = text + " " + v
+			} else {
+				fields[k] = v
+			}
 		}
+	}
+
+	for _, k := range slices.Sorted(maps.Keys(fields)) {
+		_, _ = fmt.Fprintf(msg, " [%s: %s]", k, fields[k])
 	}
 
 	return msg.String()

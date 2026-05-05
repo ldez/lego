@@ -14,6 +14,12 @@
   "field": [
     {
       "authorization": "'Authorization' must be set."
+    },
+    {
+      "projectId": "Field must be set."
+    },
+    {
+      "projectId": "Field cannot be empty."
     }
   ]
 }

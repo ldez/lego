@@ -62,7 +62,10 @@ func TestClient_ListZones_error(t *testing.T) {
 
 	_, err := client.ListZones(t.Context())
 
-	require.EqualError(t, err, "400: Bad Request Transferred data are incorrect. (01DXF6DT009CJANMTD1S57HQWQ 1777992035 /ns/zone/list) [authorization: 'Authorization' must be set.]")
+	require.EqualError(t, err, "400: Bad Request Transferred data are incorrect."+
+		" (01DXF6DT009CJANMTD1S57HQWQ 1777992035 /ns/zone/list)"+
+		" [authorization: 'Authorization' must be set.]"+
+		" [projectId: Field must be set. Field cannot be empty.]")
 }
 
 func TestClient_CreateRecord(t *testing.T) {
