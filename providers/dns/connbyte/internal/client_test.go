@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -49,6 +50,19 @@ func TestClient_ListZones(t *testing.T) {
 	}}
 
 	require.Equal(t, expected, result)
+}
+
+func TestClient_ListZones_error(t *testing.T) {
+	client := mockBuilder().
+		Route("POST /ns/zone/list",
+			servermock.ResponseFromFixture("error-bad_request.json").
+				WithStatusCode(http.StatusBadRequest),
+		).
+		Build(t)
+
+	_, err := client.ListZones(t.Context())
+
+	require.EqualError(t, err, "400: Bad Request Transferred data are incorrect. (01DXF6DT009CJANMTD1S57HQWQ 1777992035 /ns/zone/list) [authorization: 'Authorization' must be set.]")
 }
 
 func TestClient_CreateRecord(t *testing.T) {

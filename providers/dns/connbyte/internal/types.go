@@ -2,12 +2,33 @@ package internal
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
+type APIError struct {
+	Status Status              `json:"status"`
+	Field  []map[string]string `json:"field"`
+}
+
+func (a APIError) Error() string {
+	msg := new(strings.Builder)
+
+	_, _ = fmt.Fprintf(msg, "%d: %s %s (%s %d %s)", a.Status.Code, a.Status.Title, a.Status.Message, a.Status.ID, a.Status.Time, a.Status.Path)
+
+	for _, m := range a.Field {
+		for k, v := range m {
+			_, _ = fmt.Fprintf(msg, " [%s: %s]", k, v)
+		}
+	}
+
+	return msg.String()
+}
+
 type APIResponse[T any] struct {
-	Status Status `json:"status"`
-	Data   T      `json:"data,omitempty"`
+	Status Status              `json:"status"`
+	Data   T                   `json:"data,omitempty"`
+	Field  []map[string]string `json:"field"`
 }
 
 type Status struct {
@@ -21,10 +42,6 @@ type Status struct {
 	Path            string `json:"path"`
 	Time            int    `json:"time"`
 	Version         string `json:"version"`
-}
-
-func (s Status) Error() string {
-	return fmt.Sprintf("%d: %s %s (%s %d %s)", s.Code, s.Title, s.Message, s.ID, s.Time, s.Path)
 }
 
 type ZoneListResponse struct {
