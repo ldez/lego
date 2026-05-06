@@ -20,8 +20,9 @@ import (
 const (
 	envNamespace = "ARTFILES_"
 
-	EnvUsername = envNamespace + "USERNAME"
-	EnvPassword = envNamespace + "PASSWORD"
+	EnvUsername   = envNamespace + "USERNAME"
+	EnvPassword   = envNamespace + "PASSWORD"
+	EnvServerName = envNamespace + "SERVER_NAME"
 
 	EnvPropagationTimeout = envNamespace + "PROPAGATION_TIMEOUT"
 	EnvPollingInterval    = envNamespace + "POLLING_INTERVAL"
@@ -30,8 +31,9 @@ const (
 
 // Config is used to configure the creation of the DNSProvider.
 type Config struct {
-	Username string
-	Password string
+	Username   string
+	Password   string
+	ServerName string
 
 	PropagationTimeout time.Duration
 	PollingInterval    time.Duration
@@ -65,6 +67,7 @@ func NewDNSProvider() (*DNSProvider, error) {
 	config := NewDefaultConfig()
 	config.Username = values[EnvUsername]
 	config.Password = values[EnvPassword]
+	config.ServerName = env.GetOrDefaultString(EnvServerName, "dcp")
 
 	return NewDNSProviderConfig(config)
 }
@@ -75,7 +78,7 @@ func NewDNSProviderConfig(config *Config) (*DNSProvider, error) {
 		return nil, errors.New("artfiles: the configuration of the DNS provider is nil")
 	}
 
-	client, err := internal.NewClient(config.Username, config.Password)
+	client, err := internal.NewClient(config.Username, config.Password, config.ServerName)
 	if err != nil {
 		return nil, fmt.Errorf("artfiles: %w", err)
 	}
