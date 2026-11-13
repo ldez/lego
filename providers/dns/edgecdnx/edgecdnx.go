@@ -126,8 +126,9 @@ func (d *DNSProvider) Present(ctx context.Context, domain, token, keyAuth string
 		return fmt.Errorf("edgecdnx: list DNS endpoints: %w", err)
 	}
 
-	// Create
-	if len(endpoints) == 0 {
+	endpoint, err := findDNSEndpoint(endpoints, dns01.UnFqdn(info.EffectiveFQDN))
+	if err != nil {
+		// Create - DNSEndpoint does not exist, so we create a new one
 		record := internal.RecordSpec{
 			DNSName:       dns01.UnFqdn(info.EffectiveFQDN),
 			Type:          "TXT",
@@ -144,19 +145,12 @@ func (d *DNSProvider) Present(ctx context.Context, domain, token, keyAuth string
 		return nil
 	}
 
-	// Update
-
-	endpoint, err := findDNSEndpoint(endpoints, dns01.UnFqdn(info.EffectiveFQDN))
-	if err != nil {
-		return fmt.Errorf("edgecdnx: %w", err)
-	}
-
+	// DNS Endpoint exists - we update the existing one
 	targets := slices.Clone(endpoint.Spec.Targets)
 	targets = append(targets, info.Value)
 
 	record := internal.RecordSpec{
-		ResourceVersion: endpoint.Metadata.ResourceVersion,
-		Targets:         targets,
+		Targets: targets,
 	}
 
 	err = d.client.UpdateDNSEndpoint(ctx, zoneID, endpoint.Metadata.Name, record)
@@ -198,7 +192,7 @@ func (d *DNSProvider) CleanUp(ctx context.Context, domain, token, keyAuth string
 
 	// Delete
 	if len(targets) == 0 {
-		err = d.client.DeleteDNSEndpoint(ctx, zoneID, endpoint.Metadata.Name, endpoint.Metadata.ResourceVersion)
+		err = d.client.DeleteDNSEndpoint(ctx, zoneID, endpoint.Metadata.Name)
 		if err != nil {
 			return fmt.Errorf("edgecdnx: delete DNS endpoint: %w", err)
 		}
@@ -209,8 +203,7 @@ func (d *DNSProvider) CleanUp(ctx context.Context, domain, token, keyAuth string
 	// Update
 
 	record := internal.RecordSpec{
-		ResourceVersion: endpoint.Metadata.ResourceVersion,
-		Targets:         targets,
+		Targets: targets,
 	}
 
 	err = d.client.UpdateDNSEndpoint(ctx, zoneID, endpoint.Metadata.Name, record)
@@ -268,7 +261,7 @@ func findDNSEndpoint(records []internal.Record, fqdn string) (internal.Record, e
 			continue
 		}
 
-		if record.Metadata.ResourceVersion == "" || record.Spec.RoutingPolicy != internal.RoutingPolicySimple {
+		if record.Spec.RoutingPolicy != internal.RoutingPolicySimple {
 			continue
 		}
 

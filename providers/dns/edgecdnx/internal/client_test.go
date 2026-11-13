@@ -111,8 +111,7 @@ func TestClient_UpdateDNSEndpoint(t *testing.T) {
 		Build(t)
 
 	record := RecordSpec{
-		ResourceVersion: "mrv101",
-		Targets:         []string{"foo", "ADw2sEd82DUgXcQ9hNBZThJs7zVJkR5v9JeSbAb9mZY"},
+		Targets: []string{"foo", "ADw2sEd82DUgXcQ9hNBZThJs7zVJkR5v9JeSbAb9mZY"},
 	}
 
 	err := client.UpdateDNSEndpoint(t.Context(), "z123", "e123", record)
@@ -124,12 +123,10 @@ func TestClient_DeleteDNSEndpoint(t *testing.T) {
 		Route("DELETE /project/p123/zones/z123/dns-endpoints/e123",
 			servermock.Noop().
 				WithStatusCode(http.StatusNoContent),
-			servermock.CheckQueryParameter().Strict().
-				With("resourceVersion", "mrv101"),
 		).
 		Build(t)
 
-	err := client.DeleteDNSEndpoint(t.Context(), "z123", "e123", "mrv101")
+	err := client.DeleteDNSEndpoint(t.Context(), "z123", "e123")
 	require.NoError(t, err)
 }
 
@@ -141,6 +138,6 @@ func TestClient_DeleteDNSEndpoint_error(t *testing.T) {
 		).
 		Build(t)
 
-	err := client.DeleteDNSEndpoint(t.Context(), "z123", "e123", "mrv101")
+	err := client.DeleteDNSEndpoint(t.Context(), "z123", "e123")
 	require.EqualError(t, err, "[status code 401]: invalid API key")
 }

@@ -117,11 +117,10 @@ func (c *Client) UpdateDNSEndpoint(ctx context.Context, zoneID, endpointID strin
 
 // DeleteDNSEndpoint deletes a DNS endpoint.
 // https://api.edgecdnx.com/swagger/index.html#/DNS%20Endpoints/delete_project__project_id__zones__zone_id__dns_endpoints__dns_endpoint_id_
-func (c *Client) DeleteDNSEndpoint(ctx context.Context, zoneID, endpointID, resourceVersion string) error {
+func (c *Client) DeleteDNSEndpoint(ctx context.Context, zoneID, endpointID string) error {
 	endpoint := c.baseURL.JoinPath("project", c.projectID, "zones", zoneID, "dns-endpoints", endpointID)
 
 	query := endpoint.Query()
-	query.Set("resourceVersion", resourceVersion)
 	endpoint.RawQuery = query.Encode()
 
 	req, err := newJSONRequest(ctx, http.MethodDelete, endpoint, nil)

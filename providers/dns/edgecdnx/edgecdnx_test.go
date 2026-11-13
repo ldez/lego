@@ -243,8 +243,6 @@ func TestDNSProvider_CleanUp_delete(t *testing.T) {
 		Route("DELETE /project/p123/zones/z123/dns-endpoints/r123",
 			servermock.Noop().
 				WithStatusCode(http.StatusNoContent),
-			servermock.CheckQueryParameter().Strict().
-				With("resourceVersion", "mrv101"),
 		).
 		Build(t)
 
@@ -298,7 +296,6 @@ func Test_findZoneID(t *testing.T) {
 func Test_findDNSEndpoint(t *testing.T) {
 	records := []internal.Record{
 		{
-			Metadata: internal.Metadata{ResourceVersion: "r1"},
 			Spec: internal.RecordSpec{
 				DNSName:       "example.org",
 				Type:          "A",
@@ -306,7 +303,6 @@ func Test_findDNSEndpoint(t *testing.T) {
 			},
 		},
 		{
-			Metadata: internal.Metadata{ResourceVersion: "r2"},
 			Spec: internal.RecordSpec{
 				DNSName:       "example.com",
 				Type:          "TXT",
@@ -314,7 +310,6 @@ func Test_findDNSEndpoint(t *testing.T) {
 			},
 		},
 		{
-			Metadata: internal.Metadata{ResourceVersion: "r3"},
 			Spec: internal.RecordSpec{
 				DNSName:       "example.org",
 				Type:          "TXT",
@@ -322,7 +317,6 @@ func Test_findDNSEndpoint(t *testing.T) {
 			},
 		},
 		{
-			Metadata: internal.Metadata{ResourceVersion: "r4"},
 			Spec: internal.RecordSpec{
 				DNSName:       "example.com",
 				Type:          "TXT",
@@ -335,7 +329,6 @@ func Test_findDNSEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := internal.Record{
-		Metadata: internal.Metadata{ResourceVersion: "r4"},
 		Spec: internal.RecordSpec{
 			DNSName:       "example.com",
 			Type:          "TXT",
